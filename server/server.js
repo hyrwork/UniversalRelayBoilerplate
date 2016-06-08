@@ -14,6 +14,7 @@ import {name,version} from '../configuration/package'
 import serverExtensions from '../configuration/server/serverExtensions'
 import webapp from '../webapp/server'; // Isomorphic React server
 
+import httpProxy from 'http-proxy';
 
 // Read environment
 require( 'dotenv' ).load( );
@@ -59,6 +60,11 @@ console.log( startupInformation )
 // Main router
 let router = express( );
 
+// Proxy
+let proxy = httpProxy.createProxyServer({
+    target: 'http://127.0.0.1:5555'
+});
+
 // Add headers
 router.use(function (req, res, next)
 {
@@ -81,8 +87,13 @@ router.set( 'x-powered-by', false );
 router.use( compression( ) );
 router.use( cookieParser( ) );
 
+// Hello world
+router.get('/hello', (req, res) => {res.send('Hello world!')});
+
 // GraphQL server
-router.use( '/graphql', graphql );
+router.use( '/graphql', (req, res, next) => {
+    return proxy.web(req, res, {target: 'http://127.0.0.1:5555/graphql'});
+});
 
 // Authentication server
 router.use( '/auth', auth );
